@@ -1,0 +1,40 @@
+name: Build Installer Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-installer:
+    runs-on: windows-latest
+
+    steps:
+    - name: Repository auschecken
+      uses: actions/checkout@v4
+
+    - name: Python einrichten
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Abhängigkeiten installieren
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        if (Test-Path "SquallowTweaks\requirements.txt") { pip install -r SquallowTweaks\requirements.txt }
+
+    - name: Python-Skript in EXE umwandeln
+      run: |
+        pyinstaller --onefile --noconsole --name="SquallowTweaks" SquallowTweaks\main.py
+
+    - name: Inno Setup Installer kompilieren
+      run: |
+        & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+
+    - name: Setup.exe als GitHub Release veröffentlichen
+      uses: softprops/action-gh-release@v2
+      with:
+        files: SquallowTweaks_Setup.exe
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
